@@ -49,20 +49,29 @@ enum Modes
 class ET312
 {
 private:
-    Stream &serial;
-    Stream &debug;
-    bool didHandshake;
-    uint8_t key;
+    Stream *_serial;
+    Stream *_debug;
+    bool _enableDebug = false;
+    bool _didHandshake = false;
+    uint8_t _key = 0x00;
+
+    SemaphoreHandle_t _serialMutex;
+    SemaphoreHandle_t _debugMutex;
 
     bool readAddress(uint16_t address, uint8_t* data);
-    bool writeAddress(uint16_t address, uint8_t* data, uint8_t length);
+    bool writeAddress(uint16_t address, uint8_t* data, size_t length);
+    bool handshake();
+    
+    bool readUntil(uint8_t desiredByte, uint8_t* buf, size_t len, uint maximumRetries);
+    uint32_t flushReadBuffer();
 
+    void debug(const char* fmt, ...);
 public:
     ET312(Stream &serial, Stream &debug);
     ET312(Stream &serial);
 
-    bool handshake();
-    bool handshake(uint8_t key);
+    bool keyExchange();
+    bool setKey(uint8_t key);
     bool pushButton(Button button);
     bool showMainMenu();
     bool close(); // Close the connection and reset our key
