@@ -53,7 +53,7 @@
 #define MODE_CLIMB 0x78
 #define MODE_COMBO 0x79
 #define MODE_INTENSE 0x7a
-#define MODE_RYTHM 0x7b
+#define MODE_RHYTHM 0x7b
 #define MODE_AUDIO1 0x7c
 #define MODE_AUDIO2 0x7d
 #define MODE_AUDIO3 0x7e
