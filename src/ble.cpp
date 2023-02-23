@@ -370,6 +370,15 @@ class PowerLevelCallbacks : public BLECharacteristicCallbacks {
     }
 };
 
+class BatteryLevelCallbacks : public BLECharacteristicCallbacks {
+    void onRead(BLECharacteristic *pCharacteristic) {
+        int value = mk312_get_battery_level();
+
+        pCharacteristic->setValue(value);
+        Serial.printf("Returning battery level as %d\n", value);
+    }
+};
+
 void setupBluetooth() {
     BLEDevice::init("MK312");
     BLEServer *pServer = BLEDevice::createServer();
@@ -402,6 +411,10 @@ void setupBluetooth() {
     BLECharacteristic *powerLevel = pService->createCharacteristic(CHARACTERISTIC_POWER_LEVEL, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
     powerLevel->addDescriptor(new BLE2902());
     powerLevel->setCallbacks(new PowerLevelCallbacks());
+
+    BLECharacteristic *batteryLevel = pService->createCharacteristic(CHARACTERISTIC_BATTERY_LEVEL, BLECharacteristic::PROPERTY_READ);
+    batteryLevel->addDescriptor(new BLE2902());
+    batteryLevel->setCallbacks(new BatteryLevelCallbacks());
 
     pService->start();
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
