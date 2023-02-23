@@ -263,16 +263,6 @@ byte mk312_get_ramp_time()
   return mk312_read(ADDRESS_RAMP_TIME);
 }
 
-void mk312_set_ramp_level()
-{
-  
-}
-
-void mk312_set_ramp_time()
-{
-  
-}
-
 void mk312_ramp_start()
 {
   byte c[2] = { COMMAND_START_RAMP, 0x02};
@@ -318,6 +308,13 @@ byte mk312_get_mode()
   return mk312_read(ADDRESS_CURRENT_MODE);
 }
 
+byte mk312_get_power_level() {
+  return mk312_read(ADDRESS_POWER_LEVEL);
+}
+
+void mk312_set_power_level(byte powerLevel) {
+  mk312_write(ADDRESS_POWER_LEVEL, &powerLevel, 1);
+}
 
 void reinit_mk312_easy()
 {

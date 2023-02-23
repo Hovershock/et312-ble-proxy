@@ -26,7 +26,7 @@
 #define ADDRESS_BATTERY_LEVEL 0x4203
 #define ADDRESS_LEVELMA 0x420D
 #define ADDRESS_KEY 0x4213
-
+#define ADDRESS_POWER_LEVEL 0x41f4
 #define ADDRESS_RAMP_LEVEL 0x41f8
 #define ADDRESS_RAMP_TIME 0x41f9
 
@@ -93,11 +93,13 @@ void mk312_set_a(int percent);
 void mk312_set_b(int percent);
 void mk312_set_ma(int percent);
 void mk312_set_mode(byte newmode);
+void mk312_set_power_level(byte newLevel);
 
 int mk312_get_a();
 int mk312_get_b();
 int mk312_get_ma();
 byte mk312_get_mode();
+byte mk312_get_power_level();
 
 void mk312_all_off();
 
@@ -106,8 +108,6 @@ void mk312_disable_adc();
 bool mk312_get_adc_disabled();
 byte mk312_get_ramp_level();
 byte mk312_get_ramp_time();
-void mk312_set_ramp_level();
-void mk312_set_ramp_time();
 void mk312_ramp_start();
 int mk312_get_battery_level();
 void init_mk312_easy();
