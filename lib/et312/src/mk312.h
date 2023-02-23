@@ -89,14 +89,6 @@
 #define BUTTON_LEFT 0x10
 
 
-//deprecated void init_mk312();
-void mk312_sync();
-void mk312_inc_a();
-void mk312_inc_b();
-void mk312_inc_ma();
-void mk312_dec_a();
-void mk312_dec_b();
-void mk312_dec_ma();
 void mk312_set_a(int percent);
 void mk312_set_b(int percent);
 void mk312_set_ma(int percent);
