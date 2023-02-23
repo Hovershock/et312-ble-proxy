@@ -44,5 +44,3 @@ libraries scanning project source files.
 
 More information about PlatformIO Library Dependency Finder
 - https://docs.platformio.org/page/librarymanager/ldf.html
-
-This is largely a BLE wrapper of https://github.com/bkifft/MK-312WS/
