@@ -12,10 +12,13 @@ void setup() {
 
   Serial.println("Starting config");
 
-  init_mk312_easy();
+  // init_mk312_easy();
 
   setupBluetooth();
   Serial.println("Setup finished");
+
+  // vTaskDelay(1000);
+  // mk312_disp_pairing_code(123);
 }
 
 void loop() {

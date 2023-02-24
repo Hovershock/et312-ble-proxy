@@ -6,6 +6,9 @@
 
 #include "ble.h"
 
+esp_ble_auth_req_t auth_req = ESP_LE_AUTH_REQ_SC_MITM_BOND;   
+esp_ble_io_cap_t iocap = ESP_IO_CAP_OUT;
+
 // Read a single byte from a string. Useful for when we aren't, you know, using strings
 uint8_t readSingle(std::string s) {
     return s.c_str()[0];
@@ -379,42 +382,76 @@ class BatteryLevelCallbacks : public BLECharacteristicCallbacks {
     }
 };
 
+class SecurityCallbacks : public BLESecurityCallbacks {
+    uint32_t onPassKeyRequest() {
+        Serial.println("Got passkey request");
+        return 555123;
+    }
+
+    void onPassKeyNotify(uint32_t passKey) {
+        Serial.printf("Got passkey notify: %d\n", passKey);
+    }
+
+    bool onConfirmPIN(uint32_t passKey){
+        Serial.printf("Got confirm pin: %d\n", passKey);
+        return true;
+    }
+
+    bool onSecurityRequest() {
+        Serial.println("Got security request");
+        return true;
+    }
+
+    void onAuthenticationComplete(esp_ble_auth_cmpl_t cmpl){
+		Serial.println("Authentication completed");
+	}
+};
+
 void setupBluetooth() {
+    BLESecurity *pSecurity = new BLESecurity();
+    pSecurity->setCapability(ESP_IO_CAP_OUT); // We can display things, but nothing else
+    pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND); // Security connections, MITM protection, bonding enabled
+    pSecurity->setInitEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
+    
     BLEDevice::init("MK312");
+    BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT);
+    BLEDevice::setSecurityCallbacks(new SecurityCallbacks());
     BLEServer *pServer = BLEDevice::createServer();
     pServer->setCallbacks(new ServerCallbacks());
 
     BLEService *pService = pServer->createService(BLEUUID(SERVICE_MK312), 30);
 
     BLECharacteristic *adcEnabled = pService->createCharacteristic(CHARACTERISTIC_ADC_ENABLED, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
-
+    // adcEnabled->setAccessPermissions(ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE_ENC_MITM); // Allow this to be read by anyone, but only written if we have bonded
     adcEnabled->addDescriptor(new BLE2902());
     adcEnabled->setCallbacks(new ADCEnabledCallbacks());
 
-    BLECharacteristic *levelA = pService->createCharacteristic(CHARACTERISTIC_LEVEL_A, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
-    levelA->addDescriptor(new BLE2902());
-    levelA->setCallbacks(new LevelACallbacks());
-
-    BLECharacteristic *levelB = pService->createCharacteristic(CHARACTERISTIC_LEVEL_B, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
-    levelB->addDescriptor(new BLE2902());
-    levelB->setCallbacks(new LevelBCallbacks());
-
-    BLECharacteristic *ma = pService->createCharacteristic(CHARACTERISTIC_MA, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
-    ma->addDescriptor(new BLE2902());
-    ma->setCallbacks(new MACallbacks());
-
-    BLECharacteristic *mode = pService->createCharacteristic(CHARACTERISTIC_MODE, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
-    mode->addDescriptor(new BLE2902());
-    mode->setCallbacks(new ModeCallbacks());
 
 
-    BLECharacteristic *powerLevel = pService->createCharacteristic(CHARACTERISTIC_POWER_LEVEL, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
-    powerLevel->addDescriptor(new BLE2902());
-    powerLevel->setCallbacks(new PowerLevelCallbacks());
+    // BLECharacteristic *levelA = pService->createCharacteristic(CHARACTERISTIC_LEVEL_A, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+    // levelA->addDescriptor(new BLE2902());
+    // levelA->setCallbacks(new LevelACallbacks());
 
-    BLECharacteristic *batteryLevel = pService->createCharacteristic(CHARACTERISTIC_BATTERY_LEVEL, BLECharacteristic::PROPERTY_READ);
-    batteryLevel->addDescriptor(new BLE2902());
-    batteryLevel->setCallbacks(new BatteryLevelCallbacks());
+    // BLECharacteristic *levelB = pService->createCharacteristic(CHARACTERISTIC_LEVEL_B, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+    // levelB->addDescriptor(new BLE2902());
+    // levelB->setCallbacks(new LevelBCallbacks());
+
+    // BLECharacteristic *ma = pService->createCharacteristic(CHARACTERISTIC_MA, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+    // ma->addDescriptor(new BLE2902());
+    // ma->setCallbacks(new MACallbacks());
+
+    // BLECharacteristic *mode = pService->createCharacteristic(CHARACTERISTIC_MODE, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+    // mode->addDescriptor(new BLE2902());
+    // mode->setCallbacks(new ModeCallbacks());
+
+
+    // BLECharacteristic *powerLevel = pService->createCharacteristic(CHARACTERISTIC_POWER_LEVEL, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+    // powerLevel->addDescriptor(new BLE2902());
+    // powerLevel->setCallbacks(new PowerLevelCallbacks());
+
+    // BLECharacteristic *batteryLevel = pService->createCharacteristic(CHARACTERISTIC_BATTERY_LEVEL, BLECharacteristic::PROPERTY_READ);
+    // batteryLevel->addDescriptor(new BLE2902());
+    // batteryLevel->setCallbacks(new BatteryLevelCallbacks());
 
     pService->start();
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
