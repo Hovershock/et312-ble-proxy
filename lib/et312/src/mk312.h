@@ -43,6 +43,7 @@
 #define COMMAND_WRITE_STRING_TO_LCD 0x15
 #define COMMAND_NO_COMMAND 0xff
 
+#define COMMAND_WRITE_CHARATER_TO_LCD 0x13
 #define COMMAND_START_RAMP 0x21
 
 // Modes
@@ -94,6 +95,8 @@ void mk312_set_b(int percent);
 void mk312_set_ma(int percent);
 void mk312_set_mode(byte newmode);
 void mk312_set_power_level(byte newLevel);
+
+void mk312_disp_pairing_code(uint code);
 
 int mk312_get_a();
 int mk312_get_b();

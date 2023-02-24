@@ -316,6 +316,31 @@ void mk312_set_power_level(byte powerLevel) {
   mk312_write(ADDRESS_POWER_LEVEL, &powerLevel, 1);
 }
 
+// Pretty sure this is going to be slow AF, but it should work for BT
+// pairing, which is what I want it to be used for
+void mk312_disp_pairing_code(uint code) {
+  char buf[20];
+  snprintf(buf, 20, "Code: %06u      ", code);
+
+  Serial.println(buf);
+
+  byte command = COMMAND_WRITE_CHARATER_TO_LCD;
+
+  // This will blank out the bottom line... one character at a time
+  for (int i = 0; i < 20; i++) {
+    byte singleChar = buf[i];
+    byte offset = 64 + i;
+
+    mk312_write(ADDRESS_LCD_WRITE_PARAMETER_1, &singleChar, 1);
+    mk312_write(ADDRESS_LCD_WRITE_PARAMETER_2, &offset, 1);
+    mk312_write(ADDRESS_COMMAND_1, &command, 1);
+
+    // delay for 20 ms, which is the documented minimum time between commands
+    vTaskDelay(20 / portTICK_PERIOD_MS);
+  }
+
+}
+
 void reinit_mk312_easy()
 {
   int i = 0;
