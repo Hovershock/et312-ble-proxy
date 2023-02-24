@@ -1,0 +1,10 @@
+[   
+    { "name": "ET312 Level A", "identifier": "com.hovershockdev.et312.level_a", "uuid": "CB7EFDF3-8066-40A5-91B7-8C1E1F498830", "source": "hovershockdev"},
+    { "name": "ET312 Level B", "identifier": "com.hovershockdev.et312.level_b", "uuid": "F1AFDE05-D324-49DA-B336-766434634BF3", "source": "hovershockdev"},
+    { "name": "ET312 MA", "identifier": "com.hovershockdev.et312.ma", "uuid": "A6C54F45-7F46-4F21-8598-DAF474986B0F", "source": "hovershockdev"},
+    { "name": "ET312 Mode", "identifier": "com.hovershockdev.et312.mode", "uuid": "398D747C-0A5E-4678-959C-C696D8147C09", "source": "hovershockdev"},
+    { "name": "ET312 ADC Enabled", "identifier": "com.hovershockdev.et312.adc_enabled", "uuid": "956100EC-12FA-4E62-8B15-EF57649280AB", "source": "hovershockdev"},
+    { "name": "ET312 Power Level", "identifier": "com.hovershockdev.et312.power_level", "uuid": "11565DAB-9C96-41B9-BD72-C6621142FCF3", "source": "hovershockdev"},
+    { "name": "ET312 On Battery", "identifier": "com.hovershockdev.et312.on_battery", "uuid": "AFDD194D-F1E9-4C93-B241-5A477A63AA7F", "source": "hovershockdev"},
+    { "name": "ET312 Battery Level", "identifier": "com.hovershockdev.et312.battery_level", "uuid": "F43590D3-2CD7-40E0-BB22-6017B1C8DB81", "source": "hovershockdev"}
+]
