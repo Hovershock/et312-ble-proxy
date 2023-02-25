@@ -6,8 +6,8 @@
 
 #include "ble.h"
 
-esp_ble_auth_req_t auth_req = ESP_LE_AUTH_REQ_SC_MITM_BOND;   
-esp_ble_io_cap_t iocap = ESP_IO_CAP_OUT;
+void bleSecurity();
+
 
 // Read a single byte from a string. Useful for when we aren't, you know, using strings
 uint8_t readSingle(std::string s) {
@@ -26,7 +26,7 @@ class ServerCallbacks : public BLEServerCallbacks
     void onDisconnect(BLEServer *pServer)
     {
         pServer->getAdvertising()->start();
-        mk312_all_off();
+        // mk312_all_off();
     }
 };
 class ADCEnabledCallbacks : public BLECharacteristicCallbacks {
@@ -383,48 +383,94 @@ class BatteryLevelCallbacks : public BLECharacteristicCallbacks {
 };
 
 class SecurityCallbacks : public BLESecurityCallbacks {
-    uint32_t onPassKeyRequest() {
-        Serial.println("Got passkey request");
-        return 555123;
-    }
+private:
+  BLEServer* _pServer;
+public:
+  SecurityCallbacks(BLEServer* pServer) {
+    _pServer = pServer;
+  }
 
-    void onPassKeyNotify(uint32_t passKey) {
-        Serial.printf("Got passkey notify: %d\n", passKey);
-    }
+  uint32_t onPassKeyRequest(){
+    // I think this is used when the box is being asked to input a passkey.
+    // We are not using it
+    Serial.println("Got onPassKeyRequest");
+    return 000000;
+  }
 
-    bool onConfirmPIN(uint32_t passKey){
-        Serial.printf("Got confirm pin: %d\n", passKey);
-        return true;
-    }
+  void onPassKeyNotify(uint32_t pass_key){
+    Serial.printf("PIN for pairing: %06d\n", pass_key);
+  }
 
-    bool onSecurityRequest() {
-        Serial.println("Got security request");
-        return true;
-    }
+  bool onConfirmPIN(uint32_t pass_key){
+    // This callback is for confirming if the displayed passkey is the same.
+    // We are not using it.
+    Serial.println("onConfirmPin called");
+    return false;
+  }
 
-    void onAuthenticationComplete(esp_ble_auth_cmpl_t cmpl){
-		Serial.println("Authentication completed");
-	}
+  // Do we want to allow a device to pair?
+  bool onSecurityRequest(){
+    Serial.println("onSecurityRequest");
+    return true;
+  }
+
+  void onAuthenticationComplete(esp_ble_auth_cmpl_t cmpl){
+    if(cmpl.success){
+      Serial.println("   - SecurityCallback - Authentication Success");       
+    }else{
+      Serial.println("   - SecurityCallback - Authentication Failure*");
+      _pServer->removePeerDevice(_pServer->getConnId(), true);
+      _pServer->disconnect(_pServer->getConnId());
+    }
+    BLEDevice::startAdvertising();
+  }
 };
 
 void setupBluetooth() {
-    BLESecurity *pSecurity = new BLESecurity();
-    pSecurity->setCapability(ESP_IO_CAP_OUT); // We can display things, but nothing else
-    pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND); // Security connections, MITM protection, bonding enabled
-    pSecurity->setInitEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
-    
     BLEDevice::init("MK312");
+    
     BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT);
-    BLEDevice::setSecurityCallbacks(new SecurityCallbacks());
-    BLEServer *pServer = BLEDevice::createServer();
+    BLEServer* pServer = BLEDevice::createServer();
+    BLEDevice::setSecurityCallbacks(new SecurityCallbacks(pServer));
+
     pServer->setCallbacks(new ServerCallbacks());
 
-    BLEService *pService = pServer->createService(BLEUUID(SERVICE_MK312), 30);
+    BLEService *pService = pServer->createService(SERVICE_MK312);
+    BLECharacteristic* pCharacteristic = pService->createCharacteristic(
+                        CHARACTERISTIC_ADC_ENABLED,
+                        BLECharacteristic::PROPERTY_READ   |
+                        BLECharacteristic::PROPERTY_WRITE
+                        );
 
-    BLECharacteristic *adcEnabled = pService->createCharacteristic(CHARACTERISTIC_ADC_ENABLED, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
-    // adcEnabled->setAccessPermissions(ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE_ENC_MITM); // Allow this to be read by anyone, but only written if we have bonded
-    adcEnabled->addDescriptor(new BLE2902());
-    adcEnabled->setCallbacks(new ADCEnabledCallbacks());
+    pCharacteristic->setAccessPermissions(ESP_GATT_PERM_READ_ENCRYPTED | ESP_GATT_PERM_WRITE_ENCRYPTED);
+    pService->start();
+
+    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+    pAdvertising->addServiceUUID(SERVICE_MK312);
+    pAdvertising->setScanResponse(false);
+    pAdvertising->setMinPreferred(0x0);
+    BLEDevice::startAdvertising();
+
+    bleSecurity();
+    return;
+
+    // BLESecurity *pSecurity = new BLESecurity();
+    // pSecurity->setCapability(ESP_IO_CAP_OUT); // We can display things, but nothing else
+    // pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND); // Security connections, MITM protection, bonding enabled
+    // pSecurity->setInitEncryptionKey(ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK);
+    
+    // BLEDevice::init("MK312");
+    // BLEDevice::setEncryptionLevel(ESP_BLE_SEC_ENCRYPT);
+    // BLEDevice::setSecurityCallbacks(new SecurityCallbacks());
+    // BLEServer *pServer = BLEDevice::createServer();
+    // pServer->setCallbacks(new ServerCallbacks());
+
+    // BLEService *pService = pServer->createService(BLEUUID(SERVICE_MK312), 30);
+
+    // BLECharacteristic *adcEnabled = pService->createCharacteristic(CHARACTERISTIC_ADC_ENABLED, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
+    // // adcEnabled->setAccessPermissions(ESP_GATT_PERM_READ | ESP_GATT_PERM_WRITE_ENC_MITM); // Allow this to be read by anyone, but only written if we have bonded
+    // adcEnabled->addDescriptor(new BLE2902());
+    // adcEnabled->setCallbacks(new ADCEnabledCallbacks());
 
 
 
@@ -453,11 +499,28 @@ void setupBluetooth() {
     // batteryLevel->addDescriptor(new BLE2902());
     // batteryLevel->setCallbacks(new BatteryLevelCallbacks());
 
-    pService->start();
-    BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
-    pAdvertising->addServiceUUID(SERVICE_MK312);
-    pAdvertising->setScanResponse(true);
-    pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue
-    pAdvertising->setMinPreferred(0x12);
-    BLEDevice::startAdvertising();
+    // pService->start();
+    // BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+    // pAdvertising->addServiceUUID(SERVICE_MK312);
+    // pAdvertising->setScanResponse(true);
+    // pAdvertising->setMinPreferred(0x06); // functions that help with iPhone connections issue
+    // pAdvertising->setMinPreferred(0x12);
+    // BLEDevice::startAdvertising();
+
+    // bleSecurity();
+}
+
+void bleSecurity(){
+  esp_ble_auth_req_t auth_req = ESP_LE_AUTH_REQ_SC_MITM_BOND;
+  esp_ble_io_cap_t iocap = ESP_IO_CAP_OUT;          
+  uint8_t key_size = 16;     
+  uint8_t init_key = ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK;
+  uint8_t rsp_key = ESP_BLE_ENC_KEY_MASK | ESP_BLE_ID_KEY_MASK;
+  uint8_t auth_option = ESP_BLE_ONLY_ACCEPT_SPECIFIED_AUTH_DISABLE;
+  esp_ble_gap_set_security_param(ESP_BLE_SM_AUTHEN_REQ_MODE, &auth_req, sizeof(uint8_t));
+  esp_ble_gap_set_security_param(ESP_BLE_SM_IOCAP_MODE, &iocap, sizeof(uint8_t));
+  esp_ble_gap_set_security_param(ESP_BLE_SM_MAX_KEY_SIZE, &key_size, sizeof(uint8_t));
+  esp_ble_gap_set_security_param(ESP_BLE_SM_ONLY_ACCEPT_SPECIFIED_SEC_AUTH, &auth_option, sizeof(uint8_t));
+  esp_ble_gap_set_security_param(ESP_BLE_SM_SET_INIT_KEY, &init_key, sizeof(uint8_t));
+  esp_ble_gap_set_security_param(ESP_BLE_SM_SET_RSP_KEY, &rsp_key, sizeof(uint8_t));
 }
